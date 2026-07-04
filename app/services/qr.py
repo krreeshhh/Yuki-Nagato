@@ -24,9 +24,9 @@ def generate_qr_code_bytes(url: str) -> bytes:
         image_factory=StyledPilImage,
         module_drawer=RoundedModuleDrawer(),
         color_mask=RadialGradiantColorMask(
-            back_color=(255, 255, 255),  # White background
-            center_color=(99, 102, 241),  # Indigo center
-            edge_color=(49, 46, 129)      # Dark Navy edges
+            back_color=(11, 10, 25),      # Black background (#0B0A19)
+            center_color=(56, 189, 248),  # Glow Blue (#38BDF8)
+            edge_color=(37, 99, 235)      # Deep Blue (#2563EB)
         )
     )
     

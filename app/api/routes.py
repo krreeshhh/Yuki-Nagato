@@ -68,83 +68,6 @@ async def qr_route(file_hash: str):
         logger.error(f"Failed to generate QR Code: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate QR Code")
 
-# File details page (e.g. /crishna/resume or /8f3d2a9c/7f3a92c1)
-@router.get("/{owner}/{file}", response_class=HTMLResponse)
-async def file_details_route(
-    request: Request,
-    owner: str,
-    file: str,
-    templates=Depends(get_templates),
-    _rate_limit=Depends(rate_limiter)
-):
-    # 1. Resolve owner (slug first, then public_id)
-    user = await Database.get_user_by_identifier(owner)
-    if not user:
-        return templates.TemplateResponse(
-            request,
-            "error.html",
-            {
-                "error_title": "Account Not Found",
-                "error_message": f"No account matches the identifier '{owner}'."
-            },
-            status_code=404
-        )
-        
-    # 2. Resolve file under this owner (alias first, then hash)
-    file_meta = await Database.get_file_by_alias(user["telegram_id"], file)
-    if not file_meta:
-        # Check if the file is specified by hash directly
-        file_meta = await Database.get_file_by_hash(file)
-        if not file_meta or file_meta["owner_id"] != user["telegram_id"]:
-            return templates.TemplateResponse(
-                request,
-                "error.html",
-                {
-                    "error_title": "File Not Found",
-                    "error_message": f"The file '{file}' does not exist or has been deleted."
-                },
-                status_code=404
-            )
-            
-    # 3. Check if file has expired
-    # Create FileMetadata object to use properties
-    from app.models.file import FileMetadata
-    file_obj = FileMetadata(**file_meta)
-    if file_obj.is_expired:
-        return templates.TemplateResponse(
-            request,
-            "error.html",
-            {
-                "error_title": "File Link Expired",
-                "error_message": "This file link has expired and is no longer accessible."
-            },
-            status_code=410
-        )
-        
-    # 4. Increment view counter
-    await Database.increment_views(file_obj.hash)
-    
-    # Refresh views locally for rendering
-    file_meta["views"] += 1
-    
-    # 5. Format details
-    formatted_size = format_file_size(file_obj.file_size)
-    is_video = file_obj.mime_type.split("/")[0] == "video" or file_obj.mime_type in [
-        "video/mp4", "video/x-matroska", "video/webm", "video/quicktime"
-    ]
-    
-    share_url = f"{settings.BASE_URL}/{owner}/{file}"
-    
-    return templates.TemplateResponse(
-        request,
-        "file.html",
-        {
-            "file": file_meta,
-            "formatted_size": formatted_size,
-            "is_video": is_video,
-            "share_url": share_url
-        }
-    )
 
 # Video view page
 @router.get("/stream/{file_hash}/view", response_class=HTMLResponse)
@@ -263,3 +186,84 @@ async def stream_file_route(
             headers=headers,
             media_type=mime_type
         )
+
+
+# File details page (e.g. /crishna/resume or /8f3d2a9c/7f3a92c1)
+# Wildcard path placed at the end to prevent hijacking static routes (/stream, /qr)
+@router.get("/{owner}/{file}", response_class=HTMLResponse)
+async def file_details_route(
+    request: Request,
+    owner: str,
+    file: str,
+    templates=Depends(get_templates),
+    _rate_limit=Depends(rate_limiter)
+):
+    # 1. Resolve owner (slug first, then public_id)
+    user = await Database.get_user_by_identifier(owner)
+    if not user:
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {
+                "error_title": "Account Not Found",
+                "error_message": f"No account matches the identifier '{owner}'."
+            },
+            status_code=404
+        )
+        
+    # 2. Resolve file under this owner (alias first, then hash)
+    file_meta = await Database.get_file_by_alias(user["telegram_id"], file)
+    if not file_meta:
+        # Check if the file is specified by hash directly
+        file_meta = await Database.get_file_by_hash(file)
+        if not file_meta or file_meta["owner_id"] != user["telegram_id"]:
+            return templates.TemplateResponse(
+                request,
+                "error.html",
+                {
+                    "error_title": "File Not Found",
+                    "error_message": f"The file '{file}' does not exist or has been deleted."
+                },
+                status_code=404
+            )
+            
+    # 3. Check if file has expired
+    # Create FileMetadata object to use properties
+    from app.models.file import FileMetadata
+    file_obj = FileMetadata(**file_meta)
+    if file_obj.is_expired:
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {
+                "error_title": "File Link Expired",
+                "error_message": "This file link has expired and is no longer accessible."
+            },
+            status_code=410
+        )
+        
+    # 4. Increment view counter
+    await Database.increment_views(file_obj.hash)
+    
+    # Refresh views locally for rendering
+    file_meta["views"] += 1
+    
+    # 5. Format details
+    formatted_size = format_file_size(file_obj.file_size)
+    is_video = file_obj.mime_type.split("/")[0] == "video" or file_obj.mime_type in [
+        "video/mp4", "video/x-matroska", "video/webm", "video/quicktime"
+    ]
+    
+    share_url = f"{settings.BASE_URL}/{owner}/{file}"
+    
+    return templates.TemplateResponse(
+        request,
+        "file.html",
+        {
+            "file": file_meta,
+            "formatted_size": formatted_size,
+            "is_video": is_video,
+            "share_url": share_url
+        }
+    )
+

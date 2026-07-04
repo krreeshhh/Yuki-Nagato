@@ -554,3 +554,8 @@ footer {
         font-size: 0.85rem;
     }
 }
+
+/* Collapsible Details summary arrow rotation */
+details[open] summary .arrow {
+    transform: rotate(180deg);
+}

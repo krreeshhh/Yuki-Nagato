@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.database.mongodb import Database
 from app.services.telegram import start_web_client, stop_web_client
 from app.api.routes import router as api_router
+import app.bot.bot
 
 # Setup Logging
 logging.basicConfig(

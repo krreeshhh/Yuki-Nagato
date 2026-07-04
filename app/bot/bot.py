@@ -24,6 +24,7 @@ from app.core.security import validate_slug, validate_alias
 from app.utils.helpers import generate_secure_id, format_file_size, parse_expiry_duration
 from app.services.qr import generate_qr_code_bytes
 from app.services.telegram import get_media_metadata, copy_file_to_storage
+from app.bot.commands import parse_upload_arguments
 
 # Configure Logging
 logging.basicConfig(
@@ -39,20 +40,20 @@ if settings.VERCEL_ENV == "development" or os.name == "nt":
 else:
     SESSIONS_DIR = "/tmp"
 
-# Initialize Pyrogram Bot Client
-bot_client = Client(
-    name="bot_session",
-    api_id=settings.API_ID,
-    api_hash=settings.API_HASH,
-    bot_token=settings.BOT_TOKEN,
-    workdir=SESSIONS_DIR
-)
+from app.services.telegram import telegram_client
+bot_client = telegram_client
 
 # HELPER: Get dynamic base link for user and file
 def get_file_url(user: dict, file_meta: dict) -> str:
     owner_part = user.get("slug") or user.get("public_id")
     file_part = file_meta.get("alias") or file_meta.get("hash")
     return f"{settings.BASE_URL}/{owner_part}/{file_part}"
+
+# Wildcard debug handler
+@bot_client.on_message(group=-1)
+async def log_all_messages(client: Client, message: Message):
+    logger.info(f"🔍 DEBUG: Received message: '{message.text}' from user {message.from_user.id if message.from_user else 'unknown'}")
+    message.continue_propagation()
 
 # Command: /start
 @bot_client.on_message(filters.command("start") & filters.private)
@@ -213,7 +214,7 @@ async def upload_command(client: Client, message: Message):
         
     # Copy file to private storage channel
     status_msg = await message.reply_text("📤 Copying file to storage channel...")
-    storage_msg = await copy_file_to_storage(message.chat.id, target_msg.id)
+    storage_msg = await copy_file_to_storage(client, message.chat.id, target_msg.id)
     if not storage_msg:
         await status_msg.edit_text("❌ Error copying file to private storage. Make sure the bot is configured correctly as an admin.")
         return
@@ -244,28 +245,33 @@ async def upload_command(client: Client, message: Message):
     # Generate public link
     public_url = get_file_url(user, file_data)
     
-    # Generate QR Code image in memory
-    qr_bytes = generate_qr_code_bytes(public_url)
-    qr_photo = io.BytesIO(qr_bytes)
-    qr_photo.name = "qrcode.png"
-    
     # Build response message
     expiry_str = f"🕒 Expires at: {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC" if expires_at else "🕒 Expires at: Never"
-    caption = (
+    success_text = (
         f"✅ **File Uploaded Successfully!**\n\n"
         f"📄 **Name:** `{file_name}`\n"
         f"⚖️ **Size:** {format_file_size(file_size)}\n"
         f"🏷️ **Mime:** `{mime_type}`\n"
         f"{expiry_str}\n\n"
-        f"🔗 **Public Link:** {public_url}"
+        f"🔗 **Public Link:** `{public_url}`"
     )
     
-    # Send QR photo with details
+    # Optional QR code via inline button (kept clean by default)
+    row = []
+    # Telegram blocks localhost / 127.0.0.1 in inline URL buttons.
+    # We only include the button if it's a public domain. (The text link is always shown).
+    if not any(domain in public_url for domain in ["localhost", "127.0.0.1"]):
+        row.append(InlineKeyboardButton("🌐 Open Link", url=public_url))
+    row.append(InlineKeyboardButton("📱 Get QR Code", callback_data=f"qr:{file_hash}"))
+    
+    keyboard = [row]
+    
+    # Send text message with inline buttons
     await status_msg.delete()
-    await client.send_photo(
+    await client.send_message(
         chat_id=message.chat.id,
-        photo=qr_photo,
-        caption=caption,
+        text=success_text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
         reply_to_message_id=target_msg.id
     )
 
@@ -536,6 +542,14 @@ async def main():
     await Database.connect()
     logger.info("Starting Telegram Bot...")
     await bot_client.start()
+    
+    # Verify bot identity
+    try:
+        me = await bot_client.get_me()
+        logger.info(f"✨ SUCCESS: Logged in as Bot @{me.username} (ID: {me.id})")
+    except Exception as e:
+        logger.error(f"Failed to fetch bot identity: {e}")
+        
     logger.info("Telegram Bot is running! Press Ctrl+C to stop.")
     await idle()
     logger.info("Stopping Telegram Bot...")
@@ -543,4 +557,5 @@ async def main():
     await Database.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())

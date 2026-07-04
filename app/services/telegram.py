@@ -26,30 +26,38 @@ else:
     # On Vercel or production linux, /tmp is always writeable
     SESSIONS_DIR = "/tmp"
 
-# Create separate client configurations to avoid DB locks
-# The web server runs web_session, the bot runs bot_session
-web_client = Client(
-    name="web_session",
+# Create single shared client configuration
+telegram_client = Client(
+    name="telehost_session",
     api_id=settings.API_ID,
     api_hash=settings.API_HASH,
     bot_token=settings.BOT_TOKEN,
-    workdir=SESSIONS_DIR,
-    no_updates=True
+    workdir=SESSIONS_DIR
 )
+web_client = telegram_client
 
 async def start_web_client():
-    """Start the global Pyrogram web client."""
-    if not web_client.is_connected:
-        logger.info("Starting Pyrogram Web Client...")
-        await web_client.start()
-        logger.info("Pyrogram Web Client started successfully.")
+    """Start the global Pyrogram client."""
+    if not telegram_client.is_connected:
+        logger.info("Starting Pyrogram Client...")
+        await telegram_client.start()
+        
+        # Warm up peer cache for the storage channel to avoid PeerIdInvalid
+        try:
+            logger.info("Warming up storage channel peer cache...")
+            await telegram_client.get_chat(settings.STORAGE_CHANNEL_ID)
+            logger.info("Storage channel peer cache warmed up successfully.")
+        except Exception as e:
+            logger.warning(f"Failed to warm up storage channel peer cache: {e}")
+            
+        logger.info("Pyrogram Client started successfully.")
 
 async def stop_web_client():
-    """Stop the global Pyrogram web client."""
-    if web_client.is_connected:
-        logger.info("Stopping Pyrogram Web Client...")
-        await web_client.stop()
-        logger.info("Pyrogram Web Client stopped.")
+    """Stop the global Pyrogram client."""
+    if telegram_client.is_connected:
+        logger.info("Stopping Pyrogram Client...")
+        await telegram_client.stop()
+        logger.info("Pyrogram Client stopped.")
 
 def get_media_metadata(message: Message) -> Tuple[Optional[str], Optional[str], int]:
     """
@@ -76,14 +84,13 @@ def get_media_metadata(message: Message) -> Tuple[Optional[str], Optional[str], 
     
     return None, None, 0
 
-async def copy_file_to_storage(from_chat_id: int, message_id: int) -> Optional[Message]:
+async def copy_file_to_storage(client: Client, from_chat_id: int, message_id: int) -> Optional[Message]:
     """
-    Copies a file message to the private storage channel.
+    Copies a file message to the private storage channel using the provided active client.
     Returns the copied Message object or None.
     """
     try:
-        # Use web_client or start one temporarily (we assume start_web_client has been run)
-        copied_message = await web_client.copy_message(
+        copied_message = await client.copy_message(
             chat_id=settings.STORAGE_CHANNEL_ID,
             from_chat_id=from_chat_id,
             message_id=message_id

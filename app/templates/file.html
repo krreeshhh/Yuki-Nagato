@@ -72,10 +72,15 @@
     </div>
 
     <div class="qr-section">
-        <div class="qr-title">📱 Scan QR Code to Open</div>
-        <div class="qr-image-wrapper">
-            <img class="qr-image" src="/qr/{{ file.hash }}" alt="QR Code">
-        </div>
+        <details style="width: 100%; text-align: center; cursor: pointer;">
+            <summary class="qr-title" style="list-style: none; outline: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; user-select: none;">
+                <span>📱 Show QR Code</span>
+                <span class="arrow" style="transition: transform 0.3s; font-size: 0.8rem;">▼</span>
+            </summary>
+            <div class="qr-image-wrapper" style="margin-top: 1.5rem; background: transparent; box-shadow: none; padding: 0;">
+                <img class="qr-image" src="/qr/{{ file.hash }}" alt="QR Code" style="border: 1px solid var(--border-color); border-radius: 16px; padding: 0.5rem; background-color: #0B0A19; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);">
+            </div>
+        </details>
     </div>
 </div>
 {% endblock %}
