@@ -18,7 +18,11 @@ class Database:
         
         try:
             logger.info("Connecting to MongoDB Atlas...")
-            cls.client = AsyncIOMotorClient(settings.MONGODB_URI)
+            import certifi
+            cls.client = AsyncIOMotorClient(
+                settings.MONGODB_URI,
+                tlsCAFile=certifi.where()
+            )
             cls.db = cls.client[settings.DATABASE_NAME]
             logger.info(f"Connected to database: {settings.DATABASE_NAME}")
             
