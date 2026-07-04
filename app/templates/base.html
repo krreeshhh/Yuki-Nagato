@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TeleHost - Premium Telegram File Hosting{% endblock %}</title>
+    <meta name="description" content="{% block description %}Host, share, and stream files securely directly from Telegram private storage channels with high-speed delivery.{% endblock %}">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Icon library (optional, using standard emojis for maximum speed and simplicity) -->
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-icon">⚡</span> TeleHost
+            </a>
+            <div class="nav-links">
+                <a href="/" class="btn-nav">Home</a>
+                <a href="https://t.me" target="_blank" class="btn-nav btn-nav-primary">⚡ Connect Bot</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2026 TeleHost. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="https://t.me" target="_blank">Telegram Channel</a>
+                <a href="https://t.me" target="_blank">Bot Support</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

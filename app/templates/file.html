@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ file.file_name }} - TeleHost{% endblock %}
+
+{% block content %}
+<div class="glass-card">
+    <h2 style="text-align: center; margin-bottom: 2rem;">⚡ Shared File</h2>
+    
+    <div class="file-info-container">
+        <div class="file-header">
+            <div class="file-icon-wrapper">
+                {% if file.mime_type.startswith('image/') %}
+                🖼️
+                {% elif file.mime_type.startswith('video/') %}
+                🎬
+                {% elif file.mime_type.startswith('audio/') %}
+                🎵
+                {% elif file.mime_type == 'application/pdf' %}
+                📕
+                {% elif file.mime_type in ['application/zip', 'application/x-zip-compressed', 'application/x-rar-compressed'] %}
+                📦
+                {% else %}
+                📄
+                {% endif %}
+            </div>
+            <div class="file-name-meta">
+                <div class="file-name" title="{{ file.file_name }}">{{ file.file_name }}</div>
+                <div class="file-meta-sub">{{ file.mime_type }}</div>
+            </div>
+        </div>
+        
+        <div class="file-details-grid">
+            <div class="detail-item">
+                <div class="detail-label">Size</div>
+                <div class="detail-value">{{ formatted_size }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Views</div>
+                <div class="detail-value">{{ file.views }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Downloads</div>
+                <div class="detail-value">{{ file.downloads }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Expires</div>
+                <div class="detail-value" style="font-size: 0.95rem;">
+                    {% if file.expires_at %}
+                    {{ file.expires_at.strftime('%Y-%m-%d %H:%M') }} UTC
+                    {% else %}
+                    Never
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-group">
+        {% if is_video %}
+        <a href="/stream/{{ file.hash }}/view" class="btn-primary">
+            🎬 Stream Video
+        </a>
+        {% endif %}
+        
+        <a href="/stream/{{ file.hash }}" class="btn-primary" style="background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%); box-shadow: 0 4px 15px var(--secondary-glow);">
+            📥 Download File
+        </a>
+        
+        <button id="btn-copy-link" class="btn-secondary" data-url="{{ share_url }}">
+            🔗 Copy Share Link
+        </button>
+    </div>
+
+    <div class="qr-section">
+        <div class="qr-title">📱 Scan QR Code to Open</div>
+        <div class="qr-image-wrapper">
+            <img class="qr-image" src="/qr/{{ file.hash }}" alt="QR Code">
+        </div>
+    </div>
+</div>
+{% endblock %}

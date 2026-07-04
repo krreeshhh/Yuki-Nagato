@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Stream: {{ file.file_name }} - TeleHost{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="max-width: 800px; width: 100%;">
+    <h2 style="margin-bottom: 0.5rem; font-size: 1.6rem;">🎬 Video Stream</h2>
+    <p style="margin-bottom: 1.5rem; font-size: 0.95rem; color: var(--text-secondary);">
+        Streaming: <strong>{{ file.file_name }}</strong> ({{ formatted_size }})
+    </p>
+    
+    <div class="video-player-container">
+        <video class="video-player" controls autoplay preload="metadata">
+            <source src="/stream/{{ file.hash }}" type="{{ file.mime_type }}">
+            Your browser does not support HTML5 video range streaming.
+        </video>
+    </div>
+    
+    <div class="button-group" style="display: flex; flex-direction: row; gap: 1rem; margin-top: 1.5rem;">
+        <a href="/{{ owner_slug_or_id }}/{{ file.alias or file.hash }}" class="btn-secondary" style="flex: 1;">
+            ⬅️ Back to Info
+        </a>
+        <a href="/stream/{{ file.hash }}" class="btn-primary" style="flex: 1.5; background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%); box-shadow: 0 4px 15px var(--secondary-glow);">
+            📥 Download Video
+        </a>
+    </div>
+</div>
+{% endblock %}

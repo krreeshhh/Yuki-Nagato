@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}TeleHost - Zero-Server-Storage File Hosting Platform{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+    <div class="glass-card" style="text-align: center; max-width: 750px; margin-bottom: 2rem;">
+        <h1>Unleash Telegram as Private Cloud Storage</h1>
+        <p class="lead">Upload files through our Telegram bot, generate secure shareable links instantly, and stream/download directly without storing any file binaries on our servers.</p>
+        
+        <div style="margin: 2rem 0;">
+            <a href="https://t.me" target="_blank" class="btn-primary" style="max-width: 320px; margin: 0 auto;">
+                🤖 Launch Telegram Bot
+            </a>
+        </div>
+        
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0;">
+            Fully production-ready • Zero permanent server storage • Absolute privacy
+        </p>
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <div class="feature-title">Privacy Focused</div>
+            <div class="feature-desc">Files reside securely in your private Telegram storage channel. We never store copy binaries on our app servers.</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-title">Fast Dynamic Streaming</div>
+            <div class="feature-desc">Our web server streams media chunks directly from Telegram, bypassing heavy intermediate disk write operations.</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🎬</div>
+            <div class="feature-title">HTTP Range Support</div>
+            <div class="feature-desc">Seek, pause, and play MP4, MKV, WebM, and MOV videos directly in the browser with our premium HTML5 video player.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
