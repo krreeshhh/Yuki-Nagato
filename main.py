@@ -73,9 +73,9 @@ app.include_router(api_router)
 async def custom_404_handler(request: Request, exc):
     templates = app.state.templates
     return templates.TemplateResponse(
+        request,
         "error.html",
         {
-            "request": request,
             "error_title": "404 - Page Not Found",
             "error_message": "The page or file you are looking for does not exist on this server."
         },
@@ -86,11 +86,12 @@ async def custom_404_handler(request: Request, exc):
 async def custom_500_handler(request: Request, exc):
     templates = app.state.templates
     return templates.TemplateResponse(
+        request,
         "error.html",
         {
-            "request": request,
             "error_title": "500 - Internal Server Error",
             "error_message": "A critical system error occurred. We have logged the error and are working on it."
         },
         status_code=500
     )
+

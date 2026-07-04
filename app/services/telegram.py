@@ -1,6 +1,16 @@
 import os
 import logging
 from typing import Optional, Tuple, AsyncGenerator
+import asyncio
+
+# Fix for Python 3.12+ (especially 3.14) where asyncio.get_event_loop() throws RuntimeError if no loop is running
+# Pyrogram imports sync methods that require an active loop at import time
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
 from pyrogram import Client
 from pyrogram.types import Message
 from app.core.config import settings
@@ -23,7 +33,8 @@ web_client = Client(
     api_id=settings.API_ID,
     api_hash=settings.API_HASH,
     bot_token=settings.BOT_TOKEN,
-    workdir=SESSIONS_DIR
+    workdir=SESSIONS_DIR,
+    no_updates=True
 )
 
 async def start_web_client():

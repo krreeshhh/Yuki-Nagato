@@ -1,6 +1,15 @@
 import os
 import logging
 import asyncio
+
+# Fix for Python 3.12+ (especially 3.14) where asyncio.get_event_loop() throws RuntimeError if no loop is running
+# Pyrogram imports sync methods that require an active loop at import time
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
 from datetime import datetime, timezone
 import io
 from pyrogram import Client, filters, idle

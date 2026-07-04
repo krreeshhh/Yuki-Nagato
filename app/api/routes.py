@@ -2,6 +2,7 @@ import logging
 import urllib.parse
 from fastapi import APIRouter, Request, HTTPException, Depends, status
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
+from app.core.config import settings
 from app.database.mongodb import Database
 from app.core.security import rate_limiter
 from app.utils.helpers import format_file_size
@@ -40,7 +41,7 @@ def parse_range_header(range_header: str, file_size: int):
 # Landing page
 @router.get("/", response_class=HTMLResponse)
 async def home_route(request: Request, templates=Depends(get_templates)):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 # QR Code dynamic generation route
 @router.get("/qr/{file_hash}", dependencies=[Depends(rate_limiter)])
@@ -80,9 +81,9 @@ async def file_details_route(
     user = await Database.get_user_by_identifier(owner)
     if not user:
         return templates.TemplateResponse(
+            request,
             "error.html",
             {
-                "request": request,
                 "error_title": "Account Not Found",
                 "error_message": f"No account matches the identifier '{owner}'."
             },
@@ -96,9 +97,9 @@ async def file_details_route(
         file_meta = await Database.get_file_by_hash(file)
         if not file_meta or file_meta["owner_id"] != user["telegram_id"]:
             return templates.TemplateResponse(
+                request,
                 "error.html",
                 {
-                    "request": request,
                     "error_title": "File Not Found",
                     "error_message": f"The file '{file}' does not exist or has been deleted."
                 },
@@ -111,9 +112,9 @@ async def file_details_route(
     file_obj = FileMetadata(**file_meta)
     if file_obj.is_expired:
         return templates.TemplateResponse(
+            request,
             "error.html",
             {
-                "request": request,
                 "error_title": "File Link Expired",
                 "error_message": "This file link has expired and is no longer accessible."
             },
@@ -135,9 +136,9 @@ async def file_details_route(
     share_url = f"{settings.BASE_URL}/{owner}/{file}"
     
     return templates.TemplateResponse(
+        request,
         "file.html",
         {
-            "request": request,
             "file": file_meta,
             "formatted_size": formatted_size,
             "is_video": is_video,
@@ -156,8 +157,9 @@ async def video_view_route(
     file_meta = await Database.get_file_by_hash(file_hash)
     if not file_meta:
         return templates.TemplateResponse(
+            request,
             "error.html",
-            {"request": request, "error_title": "File Not Found", "error_message": "The video you are trying to stream does not exist."},
+            {"error_title": "File Not Found", "error_message": "The video you are trying to stream does not exist."},
             status_code=404
         )
         
@@ -166,16 +168,18 @@ async def video_view_route(
     file_obj = FileMetadata(**file_meta)
     if file_obj.is_expired:
         return templates.TemplateResponse(
+            request,
             "error.html",
-            {"request": request, "error_title": "Link Expired", "error_message": "This video stream link has expired."},
+            {"error_title": "Link Expired", "error_message": "This video stream link has expired."},
             status_code=410
         )
         
     user = await Database.get_user_by_telegram_id(file_obj.owner_id)
     if not user:
         return templates.TemplateResponse(
+            request,
             "error.html",
-            {"request": request, "error_title": "Owner Not Found", "error_message": "The file owner's account could not be found."},
+            {"error_title": "Owner Not Found", "error_message": "The file owner's account could not be found."},
             status_code=404
         )
         
@@ -183,9 +187,9 @@ async def video_view_route(
     formatted_size = format_file_size(file_obj.file_size)
     
     return templates.TemplateResponse(
+        request,
         "video.html",
         {
-            "request": request,
             "file": file_meta,
             "formatted_size": formatted_size,
             "owner_slug_or_id": owner_slug_or_id
