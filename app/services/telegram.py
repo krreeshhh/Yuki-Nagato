@@ -18,7 +18,10 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Determine working directory for sessions (especially writeable /tmp on Vercel serverless)
-if settings.VERCEL_ENV == "development" or os.name == "nt":
+# We support persistent directories like /data if available (e.g. Railway volume mounts)
+if os.path.exists("/data"):
+    SESSIONS_DIR = "/data"
+elif settings.VERCEL_ENV == "development" or os.name == "nt":
     # On Windows or local dev, create a local directory for sessions
     SESSIONS_DIR = os.path.join(os.getcwd(), ".sessions")
     os.makedirs(SESSIONS_DIR, exist_ok=True)
