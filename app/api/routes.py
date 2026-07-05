@@ -43,30 +43,7 @@ def parse_range_header(range_header: str, file_size: int):
 async def home_route(request: Request, templates=Depends(get_templates)):
     return templates.TemplateResponse(request, "index.html")
 
-# Diagnostic bot check route
-@router.get("/test-bot")
-async def test_bot_route():
-    is_connected = telegram_client.is_connected
-    bot_username = None
-    if is_connected:
-        try:
-            me = await telegram_client.get_me()
-            bot_username = me.username if me else None
-        except Exception as e:
-            bot_username = f"Error: {e}"
-            
-    groups = {}
-    if telegram_client.dispatcher and telegram_client.dispatcher.groups:
-        for group, handlers in telegram_client.dispatcher.groups.items():
-            groups[str(group)] = [type(h).__name__ for h in handlers]
-            
-    return {
-        "is_connected": is_connected,
-        "bot_username": bot_username,
-        "dispatcher_groups": groups,
-        "client_loop_id": id(telegram_client.loop) if telegram_client.loop else None,
-        "dispatcher_loop_id": id(telegram_client.dispatcher.loop) if telegram_client.dispatcher and telegram_client.dispatcher.loop else None,
-    }
+
 
 # QR Code dynamic generation route
 @router.get("/qr/{file_hash}", dependencies=[Depends(rate_limiter)])
