@@ -7,7 +7,7 @@ from app.database.mongodb import Database
 from app.core.security import rate_limiter
 from app.utils.helpers import format_file_size
 from app.services.qr import generate_qr_code_bytes
-from app.services.telegram import get_storage_message, stream_telegram_file
+from app.services.telegram import get_storage_message, stream_telegram_file, telegram_client
 
 logger = logging.getLogger(__name__)
 
