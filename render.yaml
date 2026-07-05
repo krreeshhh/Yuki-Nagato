@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: telehost-filemanager
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: API_ID
+        sync: false
+        description: "Telegram API ID from my.telegram.org"
+      - key: API_HASH
+        sync: false
+        description: "Telegram API Hash from my.telegram.org"
+      - key: BOT_TOKEN
+        sync: false
+        description: "Telegram Bot Token from @BotFather"
+      - key: STORAGE_CHANNEL_ID
+        sync: false
+        description: "Private Telegram Storage Channel ID (must start with -100)"
+      - key: MONGODB_URI
+        sync: false
+        description: "MongoDB connection string (e.g. mongodb+srv://...)"
+      - key: DATABASE_NAME
+        value: YukiNagato
+        description: "MongoDB Database Name"
+      - key: BASE_URL
+        sync: false
+        description: "The URL where this app will be reachable (e.g. https://telehost-filemanager.onrender.com). Leave empty initially, then update after deployment."
+      - key: SECRET_KEY
+        generateValue: true
+        description: "Secret key for cookie signing and tokens"
+      - key: VERCEL_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.0
