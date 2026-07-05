@@ -43,8 +43,11 @@ async def start_web_client():
     """Start the global Pyrogram client."""
     if not telegram_client.is_connected:
         logger.info("Starting Pyrogram Client...")
-        # Force the client to run on the currently active event loop (Uvicorn loop)
-        telegram_client.loop = asyncio.get_running_loop()
+        # Force the client and dispatcher to run on the currently active event loop (Uvicorn loop)
+        running_loop = asyncio.get_running_loop()
+        telegram_client.loop = running_loop
+        if telegram_client.dispatcher:
+            telegram_client.dispatcher.loop = running_loop
         await telegram_client.start()
         
         # Warm up peer cache for the storage channel to avoid PeerIdInvalid
