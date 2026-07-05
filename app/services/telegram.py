@@ -53,6 +53,13 @@ async def start_web_client():
         except Exception as e:
             logger.warning(f"Failed to warm up storage channel peer cache: {e}")
             
+        # Verify and log bot identity
+        try:
+            me = await telegram_client.get_me()
+            logger.info(f"✨ SUCCESS: Logged in as Bot @{me.username} (ID: {me.id})")
+        except Exception as e:
+            logger.error(f"Failed to fetch bot identity: {e}")
+            
         logger.info("Pyrogram Client started successfully.")
 
 async def stop_web_client():
