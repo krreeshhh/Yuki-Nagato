@@ -173,3 +173,22 @@ class Database:
                 "total_downloads": res[0].get("total_downloads", 0)
             }
         return {"total_files": 0, "total_views": 0, "total_downloads": 0}
+
+    @classmethod
+    async def get_session_data(cls, session_name: str) -> Optional[str]:
+        """Retrieve Pyrogram session base64 data from MongoDB."""
+        if cls.db is None:
+            return None
+        doc = await cls.db.sessions.find_one({"session_name": session_name})
+        return doc.get("session_data") if doc else None
+
+    @classmethod
+    async def save_session_data(cls, session_name: str, session_data: str):
+        """Save Pyrogram session base64 data to MongoDB."""
+        if cls.db is None:
+            return
+        await cls.db.sessions.update_one(
+            {"session_name": session_name},
+            {"$set": {"session_name": session_name, "session_data": session_data}},
+            upsert=True
+        )

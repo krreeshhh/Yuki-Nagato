@@ -14,6 +14,8 @@ except RuntimeError:
 from pyrogram import Client
 from pyrogram.types import Message
 from app.core.config import settings
+import base64
+from app.database.mongodb import Database
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +57,38 @@ if telegram_client.dispatcher:
 
 web_client = telegram_client
 
+async def save_session_to_db():
+    """Helper to save the Pyrogram session file bytes to MongoDB."""
+    try:
+        session_file_path = os.path.join(SESSIONS_DIR, "telehost_session.session")
+        if os.path.exists(session_file_path):
+            logger.info("Persisting session to MongoDB...")
+            with open(session_file_path, "rb") as f:
+                encoded_data = base64.b64encode(f.read()).decode("utf-8")
+            await Database.save_session_data("telehost_session", encoded_data)
+            logger.info("Session persisted successfully.")
+    except Exception as e:
+        logger.error(f"Failed to persist session to MongoDB: {e}")
+
 async def start_web_client():
     """Start the global Pyrogram client."""
     if not telegram_client.is_connected:
+        # Retrieve session file from MongoDB to preserve access hashes/auth keys
+        try:
+            session_file_path = os.path.join(SESSIONS_DIR, "telehost_session.session")
+            logger.info("Checking for persisted session in MongoDB...")
+            session_data = await Database.get_session_data("telehost_session")
+            if session_data:
+                logger.info("Found persisted session in MongoDB, restoring...")
+                os.makedirs(SESSIONS_DIR, exist_ok=True)
+                with open(session_file_path, "wb") as f:
+                    f.write(base64.b64decode(session_data))
+                logger.info("Session restored successfully.")
+            else:
+                logger.info("No persisted session found in MongoDB. Starting fresh.")
+        except Exception as e:
+            logger.warning(f"Failed to restore session from MongoDB: {e}")
+
         logger.info("Starting Pyrogram Client...")
         # Force the client and dispatcher to run on the currently active event loop (Uvicorn loop)
         running_loop = asyncio.get_running_loop()
@@ -65,6 +96,9 @@ async def start_web_client():
         if telegram_client.dispatcher:
             telegram_client.dispatcher.loop = running_loop
         await telegram_client.start()
+        
+        # Save session to MongoDB immediately after successful start/login
+        await save_session_to_db()
         
         # Warm up peer cache for the storage channel to avoid PeerIdInvalid
         try:
@@ -89,6 +123,8 @@ async def stop_web_client():
         logger.info("Stopping Pyrogram Client...")
         await telegram_client.stop()
         logger.info("Pyrogram Client stopped.")
+        # Persist session on shutdown so any newly cached access hashes are saved
+        await save_session_to_db()
 
 def get_media_metadata(message: Message) -> Tuple[Optional[str], Optional[str], int]:
     """
