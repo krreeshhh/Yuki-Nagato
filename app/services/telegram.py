@@ -37,6 +37,22 @@ telegram_client = Client(
     bot_token=settings.BOT_TOKEN,
     workdir=SESSIONS_DIR
 )
+
+# Synchronous add_handler patch to prevent handler registration tasks from being lost
+# since Pyrogram schedules add_handler calls on the inactive import-time event loop.
+from collections import OrderedDict
+def patch_dispatcher_add_handler(dispatcher):
+    def add_handler_sync(handler, group: int = 0):
+        if group not in dispatcher.groups:
+            dispatcher.groups[group] = []
+            dispatcher.groups = OrderedDict(sorted(dispatcher.groups.items()))
+        if handler not in dispatcher.groups[group]:
+            dispatcher.groups[group].append(handler)
+    dispatcher.add_handler = add_handler_sync
+
+if telegram_client.dispatcher:
+    patch_dispatcher_add_handler(telegram_client.dispatcher)
+
 web_client = telegram_client
 
 async def start_web_client():
